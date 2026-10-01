@@ -1,6 +1,6 @@
 # Laya aprende Q\*bert: a mesma tarefa, outra IA, resultado oposto
 
-Depois de treinar o NanoJev no Q\*bert (repositório **nanojev-qbert**), a pergunta inevitável: e outra IA de decisão,
+Depois de treinar o NanoJev no Q\*bert (repositório [**nanojev-qbert**](https://github.com/mateusbsmg/nanojev-qbert)), a pergunta inevitável: e outra IA de decisão,
 com **o mesmo jogo, o mesmo professor e os mesmos 30 mil exemplos**? Aqui o modelo é o **Laya**
 (ModernBERT-large, 421 M parâmetros, Apache-2.0). Mesmo PC (RTX 3060, 12 GB), só a IA mudou.
 
@@ -78,7 +78,7 @@ laya-qbert/
    Hugging Face (`convaiinnovations/laya`, ~800 MB).
 2. Jogar: `python qbert/servidor_laya.py --modelo convaiinnovations/laya` (Laya original) ou apontando para a pasta
    do modelo treinado → <http://127.0.0.1:8768>.
-3. Treinar: os 30 mil exemplos estão no repositório **nanojev-qbert** (`qbert/dados/*.jsonl.gz`); ajuste a variável
+3. Treinar: os 30 mil exemplos estão no repositório [**nanojev-qbert**](https://github.com/mateusbsmg/nanojev-qbert) (`qbert/dados/*.jsonl.gz`); ajuste a variável
    `DADOS` no começo de `treinar_laya.py` e rode `python treinar_laya.py --passos 3000 --saida runs/laya_qbert_v1`.
    O modelo treinado não está no repositório (tamanho).
 
@@ -88,11 +88,20 @@ laya-qbert/
 2. O **formato da entrada** vale tanto quanto o modelo.
 3. **Velocidade de treino é poder**: quem testa mais, aprende mais.
 
+## A série
+
+Quatro experiências com IAs de decisão rodando numa placa de vídeo doméstica:
+
+1. [**NanoJev ao vivo**](https://github.com/mateusbsmg/nanojev-snake-labirinto-ao-vivo) — Snake e Labirinto jogados em tempo real por um modelo de decisão local.
+2. [**NanoJev aprende Q\*bert**](https://github.com/mateusbsmg/nanojev-qbert) — um professor em Python, 30 mil exemplos e ~15 h de treino numa RTX 3060.
+3. **Laya aprende Q\*bert** (este repositório) — a mesma tarefa com outra IA: 20/20 fases no nível 1, com 1 h de treino.
+4. [**C. elegans: valência e evolução**](https://github.com/mateusbsmg/c-elegans-valencia) — 302 neurônios, dor, prazer, fome, aprendizado por reforço e algoritmo genético ao vivo.
+
 ## Créditos e licença
 
 - **Laya** — Convai Innovations: <https://github.com/NandhaKishorM/laya>, <https://huggingface.co/convaiinnovations/laya>
   (Apache-2.0). Codificador **ModernBERT-large** (Answer.AI / LightOn, Apache-2.0).
-- **Jogo, professor e dados**: repositório **nanojev-qbert** (derivado do NanoJev, MIT, © OpenJev contributors).
+- **Jogo, professor e dados**: repositório [**nanojev-qbert**](https://github.com/mateusbsmg/nanojev-qbert) (derivado do NanoJev, MIT, © OpenJev contributors).
 - Q\*bert é marca da Gottlieb/Sony; esta é uma recriação própria para pesquisa, sem ROM, imagens ou código originais.
 - Adaptações, treino, página e documentação: Mateus Silva.
 
