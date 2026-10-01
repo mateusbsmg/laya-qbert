@@ -1,0 +1,80 @@
+[
+ {
+  "passo": 0,
+  "ce": 2.121694933573405,
+  "concorda_com_professor": 0.28833333333333333,
+  "exemplos": 600
+ },
+ {
+  "passo": 250,
+  "ce": 1.031111822128296,
+  "concorda_com_professor": 0.54,
+  "exemplos": 600
+ },
+ {
+  "passo": 500,
+  "ce": 0.9421833101908366,
+  "concorda_com_professor": 0.6116666666666667,
+  "exemplos": 600
+ },
+ {
+  "passo": 750,
+  "ce": 0.8503896395365397,
+  "concorda_com_professor": 0.7083333333333334,
+  "exemplos": 600
+ },
+ {
+  "passo": 1000,
+  "ce": 0.8159587224324544,
+  "concorda_com_professor": 0.7,
+  "exemplos": 600
+ },
+ {
+  "passo": 1250,
+  "ce": 0.8017242813110351,
+  "concorda_com_professor": 0.7016666666666667,
+  "exemplos": 600
+ },
+ {
+  "passo": 1500,
+  "ce": 0.809185593922933,
+  "concorda_com_professor": 0.715,
+  "exemplos": 600
+ },
+ {
+  "passo": 1750,
+  "ce": 0.7615330855051676,
+  "concorda_com_professor": 0.7266666666666667,
+  "exemplos": 600
+ },
+ {
+  "passo": 2000,
+  "ce": 0.7491392866770427,
+  "concorda_com_professor": 0.7483333333333333,
+  "exemplos": 600
+ },
+ {
+  "passo": 2250,
+  "ce": 0.7350555356343588,
+  "concorda_com_professor": 0.7566666666666667,
+  "exemplos": 600
+ },
+ {
+  "passo": 2500,
+  "ce": 0.7244243812561035,
+  "concorda_com_professor": 0.775,
+  "exemplos": 600
+ },
+ {
+  "passo": 2750,
+  "ce": 0.7422833315531413,
+  "concorda_com_professor": 0.7766666666666666,
+  "exemplos": 600
+ },
+ {
+  "passo": 3000,
+  "ce": 0.7486849848429362,
+  "concorda_com_professor": 0.7733333333333333,
+  "exemplos": 600
+ }
+]

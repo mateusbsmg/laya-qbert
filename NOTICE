@@ -1,0 +1,14 @@
+laya-qbert
+Copyright 2026 Mateus Silva
+
+Este projeto usa e adapta trabalhos de terceiros:
+
+- Laya (Convai Innovations) — Apache License 2.0
+  https://github.com/NandhaKishorM/laya · https://huggingface.co/convaiinnovations/laya
+- ModernBERT-large (Answer.AI / LightOn) — Apache License 2.0
+- Jogo Q*bert recriado, professor e conjunto de dados: derivados do repositório nanojev-qbert,
+  que por sua vez adapta o NanoJev (https://github.com/TianyuCodings/NanoJev) — MIT License,
+  Copyright (c) 2026 OpenJev contributors.
+
+Q*bert é marca registrada de seus detentores (Gottlieb / Sony). Esta é uma recriação independente
+para fins de pesquisa e não contém a ROM, imagens ou código do jogo original.

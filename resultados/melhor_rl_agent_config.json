@@ -1,0 +1,45 @@
+{
+ "encoder": "answerdotai/ModernBERT-large",
+ "head_layers": 2,
+ "max_len": 512,
+ "head_max_len": 192,
+ "max_prefixes": 6,
+ "act_costs": {
+  "escalate": 0.5
+ },
+ "cost_wrong_act": 3.0,
+ "amp_dtype": "bf16",
+ "model_name": "rl-agent",
+ "temperature": [
+  1.0,
+  1.0,
+  1.0
+ ],
+ "temperature_by_options": {},
+ "training": {
+  "updates": 7313,
+  "epochs_completed": 1,
+  "hours": 1.96,
+  "world_size": 1,
+  "fine_tuned_from_checkpoint": true
+ },
+ "qbert_training": {
+  "saida": "runs\\laya_qbert_v1",
+  "passos": 3000,
+  "lote": 32,
+  "lr_encoder": 2e-05,
+  "lr_cabeca": 0.0001,
+  "temp_professor": 4.0,
+  "avaliar_cada": 250,
+  "salvar_cada": 25,
+  "limite_avaliacao": 600,
+  "temp_alvo": 80,
+  "temp_retomar": 72,
+  "teto_gpu_gb": 10.0,
+  "seed": 17,
+  "passo": 2500,
+  "ce": 0.7244243812561035,
+  "concorda_com_professor": 0.775,
+  "exemplos": 600
+ }
+}

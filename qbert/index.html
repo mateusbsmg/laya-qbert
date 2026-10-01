@@ -1,0 +1,497 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Q*bert ao vivo — Laya</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f6f5f1; --panel: #ffffff; --ink: #1d1d1b; --muted: #6b6a64; --line: #e3e1da;
+    --accent: #2f6fdb; --good: #1f9d55; --bad: #d14343;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #151514; --panel: #1f1f1d; --ink: #ecebe6; --muted: #9c9a92; --line: #33322f;
+      --accent: #6c9cf0; --good: #3fbf76; --bad: #ef6b6b; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.45 system-ui, "Segoe UI", sans-serif; }
+  main { max-width: 1120px; margin: 0 auto; padding: 24px 16px 48px; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  .sub { color: var(--muted); margin: 0 0 20px; }
+  .controls { display: flex; flex-wrap: wrap; gap: 10px; align-items: end; background: var(--panel);
+    border: 1px solid var(--line); border-radius: 10px; padding: 14px; margin-bottom: 16px; }
+  label { display: flex; flex-direction: column; font-size: 12px; color: var(--muted); gap: 4px; }
+  label.check { flex-direction: row; align-items: center; gap: 6px; font-size: 13px; }
+  select, input, button { font: inherit; padding: 7px 10px; border-radius: 7px; border: 1px solid var(--line);
+    background: var(--bg); color: var(--ink); }
+  input[type=number] { width: 80px; }
+  button { cursor: pointer; background: var(--panel); }
+  button.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  button:disabled { opacity: .45; cursor: default; }
+  .grid { display: grid; grid-template-columns: minmax(0, 1fr) 330px; gap: 16px; }
+  @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px; }
+  canvas { width: 100%; height: auto; display: block; border-radius: 6px; background: #121712; image-rendering: pixelated; }
+  .status { font-weight: 600; margin-bottom: 8px; min-height: 22px; }
+  .status.good { color: var(--good); } .status.bad { color: var(--bad); }
+  .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 12px; font-size: 13px; margin-bottom: 14px; }
+  .stats b { font-variant-numeric: tabular-nums; }
+  h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin: 0 0 8px; }
+  .bar { display: grid; grid-template-columns: 118px 1fr 50px; align-items: center; gap: 8px; font-size: 13px; margin: 5px 0; }
+  .track { height: 12px; background: var(--bg); border-radius: 6px; overflow: hidden; border: 1px solid var(--line); }
+  .fill { height: 100%; background: var(--muted); }
+  .bar.chosen .fill { background: var(--accent); } .bar.chosen span:first-child { font-weight: 700; }
+  .num { text-align: right; font-variant-numeric: tabular-nums; }
+  .log { max-height: 240px; overflow: auto; font: 12px/1.5 ui-monospace, Consolas, monospace; color: var(--muted); margin-top: 12px; }
+  details { margin-top: 16px; } summary { cursor: pointer; color: var(--muted); font-size: 13px; }
+  pre { white-space: pre-wrap; font: 12px/1.45 ui-monospace, Consolas, monospace; background: var(--bg);
+    padding: 10px; border-radius: 6px; max-height: 340px; overflow: auto; }
+  .err { color: var(--bad); font-size: 13px; margin-top: 8px; }
+  .fine { font-size: 12px; color: var(--muted); margin-top: 8px; }
+  .keys { display: grid; grid-template-columns: repeat(3, 44px); gap: 6px; justify-content: center; margin-top: 10px; }
+  .keys button { padding: 8px 0; }
+  ul { margin: 6px 0 0 18px; padding: 0; font-size: 13px; color: var(--muted); }
+  .quem { border-radius: 8px; padding: 10px 12px; margin-bottom: 10px; font-size: 14px; border: 2px solid; }
+  .quem b { font-size: 16px; }
+  .quem.bot { border-color: #b0983a; background: rgba(176,152,58,.12); }
+  .quem.model { border-color: #2f6fdb; background: rgba(47,111,219,.12); }
+  .quem.human { border-color: #1f9d55; background: rgba(31,157,85,.12); }
+  #gravavel { background: var(--bg); padding-bottom: 4px; }
+  #recordBox { display: none; margin-top: 10px; gap: 8px; align-items: center; flex-wrap: wrap; }
+  #recordBox input { width: 120px; text-transform: uppercase; }
+</style>
+</head>
+<body>
+<main>
+  <div id="gravavel"><!-- área gravada pelo botão "Gravar até o fim" -->
+  <h1>Q*bert ao vivo — Laya</h1>
+  <p class="sub">Versão por turnos: cada passo é um pulo do Q*bert, depois os inimigos andam. Visual e regras do Odyssey (ou do arcade).</p>
+
+  <div class="controls">
+    <label>Regras
+      <select id="ruleset"><option value="odyssey">Odyssey (manual brasileiro)</option><option value="arcade">Arcade (Gottlieb)</option></select></label>
+    <label>Quem joga
+      <select id="player">
+        <option value="bot" selected>Robô de código</option>
+        <option value="model">Laya (modelo)</option>
+        <option value="human">Você (teclado)</option>
+      </select></label>
+    <label>Nível <input id="level" type="number" min="1" max="9" value="1"></label>
+    <label>Vidas <input id="lives" type="number" min="1" max="9" value="7"></label>
+    <label>Limite de passos <input id="steps" type="number" min="10" value="3000"></label>
+    <label>Semente <input id="seed" type="number" value="1"></label>
+    <button id="random">🎲 Aleatória</button>
+    <label class="check"><input id="cont" type="checkbox" checked> Continuar nas próximas etapas</label>
+    <label class="check" title="Sem animações: o jogo anda na velocidade da placa de vídeo"><input id="turbo" type="checkbox"> ⚡ Turbo</label>
+    <button id="new" class="primary">Nova partida</button>
+    <button id="play" disabled>▶ Jogar</button>
+    <button id="step" disabled>Um passo</button>
+    <button id="gravar" title="Grava a área da página (controles, jogo e painel) até a partida terminar; salva em MP4">⏺ Gravar até o fim</button>
+    <label>Pausa
+      <select id="delay"><option value="0">nenhuma</option><option value="300" selected>0,3 s</option><option value="800">0,8 s</option></select></label>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <div id="status" class="status">Clique em “Nova partida”.</div>
+      <canvas id="board" width="640" height="486"></canvas>
+      <div id="recordBox">
+        <span>Novo recorde! Seu nome (até 6 letras):</span>
+        <input id="recordName" maxlength="6"><button id="recordSave" class="primary">Gravar</button>
+      </div>
+      <div id="keysBox" style="display:none">
+        <div class="keys">
+          <button data-a="up_left">↖</button><button data-a="wait">·</button><button data-a="up_right">↗</button>
+          <span></span><span></span><span></span>
+          <button data-a="down_left">↙</button><span></span><button data-a="down_right">↘</button>
+        </div>
+        <p class="fine" style="text-align:center">Teclado: Q ↖ · E ↗ · Z ↙ · C ↘ · espaço espera (ou setas: ↑ ↗, → ↘, ↓ ↙, ← ↖)</p>
+      </div>
+      <div id="err" class="err"></div>
+    </div>
+    <div class="card">
+      <div class="stats" id="stats"></div>
+      <h2 id="probsTitle">Última decisão</h2>
+      <div id="probs"><p class="fine">Nenhuma ainda.</p></div>
+      <div class="log" id="log"></div>
+    </div>
+  </div>
+
+  </div>
+  <details><summary>Ver o texto que o modelo recebe neste momento</summary><pre id="stateText"></pre></details>
+  <details><summary>O que é confirmado e o que é adaptação</summary><ul id="aprox"></ul></details>
+</main>
+<script>
+const $ = id => document.getElementById(id);
+const NOMES = { up_right: "↗ cima-direita", up_left: "↖ cima-esquerda", down_right: "↘ baixo-direita", down_left: "↙ baixo-esquerda", wait: "· esperar" };
+const FINAIS = { round_cleared: ["Etapa completa! Todos os cubos na cor-alvo.", true], game_over: ["Fim de jogo: acabaram os Q*berts.", false],
+  deadline: ["Acabou o limite de passos.", false], game_completed: ["Zerou o jogo: 9 níveis completos!", true] };
+const NOME_INIMIGO = { red_ball: "Perigo Vermelho", purple_ball: "Perigo Roxo", coily: "Serpente", green_ball: "Paralizante Verde",
+  sam: "Manhoso", slick: "Manhoso", ugg: "Pula-Pula", wrongway: "Pula-Pula" };
+const EVENTOS = { color_change: "pintou cubo", rode_disc: "fugiu no disco", coily_lured: "Serpente caiu",
+  caught_green_ball: "pegou o Paralizante: inimigos parados", caught_sam: "pegou o Manhoso", caught_slick: "pegou o Manhoso",
+  coily_hatched: "Perigo Roxo virou Serpente", round_cleared: "ETAPA COMPLETA", extra_life: "Q*bert extra", new_level: "novo nível" };
+const MOTIVOS = { fell_off: "caiu da pirâmide", caught_by_red_ball: "Perigo Vermelho", caught_by_purple_ball: "Perigo Roxo",
+  caught_by_coily: "Serpente", caught_by_ugg: "Pula-Pula", caught_by_wrongway: "Pula-Pula" };
+
+// ---------- cores copiadas do vídeo (nível → etapa → [inicial, intermediária, alvo])
+const C = { azul: "#5a78f0", ouro: "#b8a040", cinza: "#5c5f5c", branco: "#d8d8cc", ciano: "#50d0e0",
+            verde: "#40b050", rosa: "#e070d0", vermelho: "#e04a3a" };   // as 3 últimas: níveis 5–9 (criados aqui)
+const PALETAS = {
+  1: [[C.azul, C.ouro, C.ouro], [C.cinza, C.azul, C.azul], [C.branco, C.ciano, C.ciano], [C.ouro, C.ciano, C.ciano]],
+  2: [[C.azul, C.cinza, C.ouro], [C.branco, C.ouro, C.ciano], [C.ouro, C.cinza, C.azul], [C.ciano, C.cinza, C.ouro]],
+  3: [[C.azul, C.azul, C.ouro], [C.ouro, C.ouro, C.ciano], [C.branco, C.branco, C.ouro], [C.ciano, C.ciano, C.cinza]],
+  4: [[C.cinza, C.ouro, C.ciano], [C.branco, C.ouro, C.ciano], [C.ouro, C.cinza, C.azul], [C.ciano, C.cinza, C.ouro]],
+  // níveis 5–9: criados aqui (o vídeo termina no nível 4)
+  5: [[C.verde, C.cinza, C.ouro], [C.rosa, C.branco, C.ciano], [C.vermelho, C.ouro, C.azul], [C.azul, C.verde, C.branco]],
+  6: [[C.ciano, C.rosa, C.verde], [C.cinza, C.vermelho, C.branco], [C.ouro, C.verde, C.rosa], [C.branco, C.azul, C.vermelho]],
+  7: [[C.vermelho, C.cinza, C.verde], [C.verde, C.ouro, C.rosa], [C.rosa, C.azul, C.ouro], [C.cinza, C.ciano, C.vermelho]],
+  8: [[C.branco, C.rosa, C.azul], [C.azul, C.vermelho, C.ouro], [C.verde, C.branco, C.vermelho], [C.ouro, C.rosa, C.verde]],
+  9: [[C.rosa, C.verde, C.branco], [C.vermelho, C.azul, C.ciano], [C.ciano, C.ouro, C.rosa], [C.verde, C.vermelho, C.ouro]],
+};
+const MOLDURA = { 1: "#b0983a", 2: "#2aa040", 3: "#b048c0", 4: "#3a50e0",
+                  5: "#e08a30", 6: "#40b8c8", 7: "#d04040", 8: "#d8d8cc", 9: "#9a4ad0" };
+const DISCOS = { 1: ["#60d8e8", "#c8a838", "#c8a838", "#7078f0"], 2: ["#40c060"], 3: ["#e070e0"], 4: ["#7078f0"],
+                 5: ["#40c060"], 6: ["#e0a040"], 7: ["#e8e8e8"], 8: ["#e070e0"], 9: ["#d8c040"] };
+const nivelVisual = l => Math.min(Math.max(1, l), 9);        // cada nível com sua paleta (5–9 criados aqui)
+let sid = null, v = null, playing = false, busy = false, times = [], recorde = { odyssey: { score: 0, name: "" }, arcade: { score: 0, name: "" } };
+let splash = 0;
+
+async function api(path, body) {
+  const r = await fetch(path, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  const j = await r.json();
+  if (!r.ok) throw new Error(j.error || r.status);
+  return j;
+}
+
+// ---------- figuras em pixels (1 = cor principal, 2 = branco, 3 = escuro)
+const SPR = {
+  qbert: ["..1111..", ".111111.", "12211111", "12211111", ".1111111111", ".111111.11", "..1111..", "..1..1..", ".11..11."],
+  gota: ["...1...", "..111..", ".11111.", "1111111", "1111111", ".11111."],
+  cobra: ["..1111.", ".1.2.21", ".111111", "..11...", ".1111..", "1....1.", ".11111.", "......1", ".11111.", "1......", ".111111"],
+  manhoso: ["...1...", "..111..", ".11111.", "1111111", ".1.1.1."],
+  pula: ["1.....1", "11...11", ".11111.", ".12121.", ".11111.", "1.1.1.1"],
+};
+function sprite(g, rows, x, y, cor, px = 3) {
+  const w = Math.max(...rows.map(r => r.length));
+  rows.forEach((row, j) => [...row].forEach((ch, i) => {
+    if (ch === ".") return;
+    g.fillStyle = ch === "1" ? cor : ch === "2" ? "#fff" : "#222";
+    g.fillRect(Math.round(x - w * px / 2 + i * px), Math.round(y - rows.length * px + j * px), px, px);
+  }));
+}
+
+// ---------- tela no mesmo lugar das capturas do Odyssey
+const W = 640, H = 486, CX = 309, DX = 57;
+const pos = (r, p) => [CX + (p - r / 2) * DX, 64 + r * 48.5];
+function digits(g, text, x, y, cor, size = 30, align = "left") {
+  // fonte pixelada parecida com a do Odyssey (sem internet cai para Courier)
+  g.font = `${Math.round(size * 0.72)}px "Press Start 2P", "Courier New", monospace`; g.fillStyle = cor; g.textAlign = align; g.fillText(text, x, y); g.textAlign = "left";
+}
+// Q*bert no desenho anterior (corpo redondo, focinho, olhos e pés)
+function desenharQbert(g, x, y) {
+  g.fillStyle = "#e86a2a"; g.beginPath(); g.arc(x, y - 22, 13, 0, 7); g.fill();
+  g.fillRect(x + 6, y - 24, 13, 7);
+  g.fillRect(x - 9, y - 12, 5, 7); g.fillRect(x + 4, y - 12, 5, 7);
+  g.fillRect(x - 11, y - 6, 8, 3); g.fillRect(x + 3, y - 6, 8, 3);
+  g.fillStyle = "#fff"; g.fillRect(x - 7, y - 30, 5, 5); g.fillRect(x + 1, y - 30, 5, 5);
+  g.fillStyle = "#000"; g.fillRect(x - 5, y - 28, 2, 2); g.fillRect(x + 3, y - 28, 2, 2);
+}
+
+// animação do pulo: anterior -> atual em forma de arco
+let anim = null;  // {prev, t}
+const lerp = (a, b, t) => a + (b - a) * t;
+function arco(p0, p1, t, altura) {
+  const [x0, y0] = pos(p0[0], p0[1]), [x1, y1] = pos(p1[0], p1[1]);
+  return [lerp(x0, x1, t), lerp(y0, y1, t) - Math.sin(Math.PI * t) * altura];
+}
+// Posição do Q*bert durante a animação. No disco (como no vídeo): pula para o disco, sobe suave até
+// acima do topo e pula no cubo do topo.
+const DELTA = { up_right: [-1, 0], up_left: [-1, -1], down_right: [1, 1], down_left: [1, 0] };
+function posQbert() {
+  if (anim.fall) {  // queda (vídeo ~19–22 s): pula para fora, cai por fora da pirâmide até sumir embaixo
+    const t = anim.t, f = anim.fall, [fx, fy] = pos(f[0], f[1]);
+    if (t < 0.22) return arco(anim.prev.q, f, t / 0.22, 30);
+    if (t < 0.85) { const u = (t - 0.22) / 0.63; return [fx, fy + u * u * (H + 60 - fy)]; }
+    return null;                                                               // pausa antes de reaparecer no topo
+  }
+  if (!anim.disc) {
+    const parado = anim.prev.q[0] === v.q[0] && anim.prev.q[1] === v.q[1];   // "esperar": fica parado, sem pulinho
+    return parado ? pos(v.q[0], v.q[1]) : arco(anim.prev.q, v.q, anim.t, 34);
+  }
+  const t = anim.t, d = anim.disc, [dx, dy] = pos(d[0], d[1]), [tx, ty] = pos(0, 0), cima = [tx, ty - 24];
+  if (t < 0.18) return arco(anim.prev.q, d, t / 0.18, 30);                     // 1. pula para o disco
+  if (t < 0.8) { const u = (t - 0.18) / 0.62, s = u * u * (3 - 2 * u);        // 2. sobe suave com o disco
+    return [lerp(dx, cima[0], s), lerp(dy, cima[1], s)]; }
+  const u = (t - 0.8) / 0.2;                                                  // 3. pula no cubo do topo
+  return [lerp(cima[0], tx, u), lerp(cima[1], ty, u) - Math.sin(Math.PI * u) * 8];
+}
+const turbo = () => $("turbo").checked;   // Turbo: sem animações (pulo, disco, queda, bônus, tela LEVEL)
+function animar(prev, events, choice) {
+  if (turbo()) return Promise.resolve();
+  const disco = (events || []).find(e => e.event === "rode_disc");
+  const caiu = (events || []).some(e => e.event === "lost_life" && e.reason === "fell_off") && DELTA[choice];
+  const fall = caiu ? [prev.q[0] + DELTA[choice][0], prev.q[1] + DELTA[choice][1]] : null;
+  const salto = Math.abs(prev.q[0] - v.q[0]) > 1 || Math.abs(prev.q[1] - v.q[1]) > 1;
+  if ((salto && !disco && !fall) || prev.round !== v.round || prev.level !== v.level) return Promise.resolve();
+  return new Promise(res => {
+    const t0 = performance.now(), dur = disco ? 1500 : fall ? 1500 : 260;
+    // setTimeout (e não requestAnimationFrame) para não travar com a aba em segundo plano
+    const frame = () => {
+      anim = { prev, disc: disco && disco.disc, fall, t: Math.min(1, (performance.now() - t0) / dur) };
+      draw();
+      if (anim.t < 1) setTimeout(frame, 16); else { anim = null; draw(); res(); }
+    };
+    frame();
+  });
+}
+
+function draw() {
+  const g = $("board").getContext("2d"), lv = nivelVisual(v.level), pal = PALETAS[lv][(v.round - 1) % 4];
+  const cores = anim ? anim.prev.colors : v.colors;              // o cubo muda de cor quando ele pousa
+  const moldura = MOLDURA[lv], discoCor = (DISCOS[lv][v.round - 1] || DISCOS[lv][0]);
+  g.fillStyle = "#121712"; g.fillRect(0, 0, W, H);
+  if (splash === "select") {  // tela de abertura do cartucho, letra por letra nas cores da captura original
+    const letras = [["S", "#4ec04e"], ["E", "#c8b060"], ["L", "#5a78f0"], ["E", "#e070d0"], ["C", "#50d0e0"], ["T", "#f0f0f0"],
+      [" ", ""], ["G", "#e04a3a"], ["A", "#c8b060"], ["M", "#d8a838"], ["E", "#5a78f0"]];
+    const passo = 30, x0 = W / 2 - (letras.length - 1) * passo / 2;
+    letras.forEach(([ch, c], i) => { if (ch !== " ") digits(g, ch, x0 + i * passo, 256, c, 44, "center"); });
+    return;
+  }
+  if (splash) {  // tela "LEVEL N" entre os níveis
+    const corNivel = v.level <= 4 ? "#7a88f0" : MOLDURA[nivelVisual(v.level)];   // níveis novos: cor da moldura
+    digits(g, "L E V E L", W / 2, 250, corNivel, 34, "center"); digits(g, String(v.level), W / 2, 330, corNivel, 34, "center");
+    return;
+  }
+  g.fillStyle = pal[2]; g.fillRect(153, 48, 28, 28);                              // cor-alvo
+  digits(g, String(v.round), 548, 78, moldura === "#b0983a" ? "#c8b060" : moldura, 44, "right");  // etapa
+  digits(g, String(Math.max(0, (anim && anim.fall ? anim.prev.lives : v.lives) - 1)),64, 150, moldura === "#b0983a" ? "#c8b060" : moldura, 44); // reservas
+  const spoiled = new Set((anim ? anim.prev : v).spoiled.map(c => c.join(",")));
+  cores.forEach((row, r) => row.forEach((c, p) => {
+    const [x, y] = pos(r, p);
+    g.fillStyle = spoiled.has(r + "," + p) ? "#e8e8e8" : pal[c]; g.fillRect(x - 14, y - 8, 28, 16);
+  }));
+  v.discs.forEach(([r, p]) => { const [x, y] = pos(r, p); g.fillStyle = discoCor; g.fillRect(x - 14, y - 4, 28, 4); g.fillRect(x - 8, y, 16, 3); });
+  const cor = { red_ball: "#e04a3a", purple_ball: "#e070d0", coily: "#d070e0", green_ball: "#40c050", sam: "#40c050", slick: "#40c050", ugg: "#e060c0", wrongway: "#e060c0" };
+  const antes = anim ? Object.fromEntries(anim.prev.enemies.map(e => [e.id, e.pos])) : {};
+  v.enemies.forEach(e => {
+    const de = antes[e.id];
+    const [x, y] = de && (de[0] !== e.pos[0] || de[1] !== e.pos[1]) ? arco(de, e.pos, anim.t, 18) : pos(e.pos[0], e.pos[1]);
+    const s = e.type === "coily" ? SPR.cobra : e.type === "sam" || e.type === "slick" ? SPR.manhoso
+      : e.type === "ugg" || e.type === "wrongway" ? SPR.pula : SPR.gota;
+    sprite(g, s, x, y - 7, cor[e.type]);
+  });
+  const qp = anim ? posQbert() : pos(v.q[0], v.q[1]);
+  const [qx, qy] = qp || [-999, -999];
+  if (anim && anim.disc) {                                  // o disco usado viaja com ele até o topo e some
+    const [dx, dy] = pos(anim.disc[0], anim.disc[1]);
+    const [ex, ey] = anim.t < 0.18 ? [dx, dy] : anim.t < 0.8 ? [qx, qy] : [null, null];
+    if (ex !== null) { g.fillStyle = discoCor; g.fillRect(ex - 14, ey - 4, 28, 4); g.fillRect(ex - 8, ey, 16, 3); }
+  }
+  if (qp) desenharQbert(g, qx, qy - 6);
+  if (v.frozen) { g.fillStyle = "rgba(120,200,255,.15)"; g.fillRect(0, 0, W, H); }
+  g.strokeStyle = moldura; g.lineWidth = 6; g.strokeRect(49, 387, 513, 48);        // placar: recorde → nome  pontos
+  const rec = recorde[v.ruleset] || { score: 0, name: "" };
+  // "recorde → nome  pontos"; a seta é desenhada à mão (a fonte pixelada não tem "→")
+  const esq = String(rec.score).padStart(4, "0"), dir = `${(rec.name || "??????").padEnd(6, "?")} ${String(v.score).padStart(4, "0")}`;
+  digits(g, "0", 0, -100, "#000", 38);  // só para ajustar a fonte antes de medir
+  const we = g.measureText(esq).width, wd = g.measureText(dir).width, seta = 26, x0 = W / 2 - (we + seta + wd) / 2;
+  digits(g, esq, x0, 425, "#d8c890", 38);
+  g.fillStyle = "#d8c890"; const sx = x0 + we + 4, sy = 413;
+  g.fillRect(sx, sy - 2, seta - 10, 4); g.beginPath(); g.moveTo(sx + seta - 12, sy - 8); g.lineTo(sx + seta - 4, sy); g.lineTo(sx + seta - 12, sy + 8); g.fill();
+  digits(g, dir, x0 + we + seta, 425, "#d8c890", 38);
+}
+
+const QUEM = {
+  bot: "Quem está jogando: <b>ROBÔ DE CÓDIGO</b>, que <b>não é o Laya</b> nem uma IA: são regras simples em Python (fugir dos inimigos, procurar cubos não pintados, usar o disco quando a Serpente chega perto).",
+  model: "Quem está jogando: <b>Laya</b>, o modelo de IA rodando na sua placa de vídeo.",
+  human: "Quem está jogando: <b>VOCÊ</b>, pelo teclado.",
+};
+function mostrarQuem() { const p = $("player").value; $("quem").className = "quem " + p; $("quem").innerHTML = QUEM[p]; }
+
+function render(extra) {
+  draw();
+  const fim = FINAIS[v.outcome];
+  const esperou = extra && extra.choice === "wait" && $("player").value === "model";
+  $("status").textContent = v.terminated ? (fim ? fim[0] : v.outcome)
+    : esperou ? "O Laya escolheu ESPERAR (ficou parado neste passo)."
+    : (playing ? "Jogando…" : $("player").value === "human" ? "Sua vez: use o teclado." : "Pronto.");
+  $("status").className = "status" + (v.terminated ? (v.success ? " good" : " bad") : "");
+  const avg = times.length ? (times.reduce((a, b) => a + b, 0) / times.length).toFixed(2) + " s" : "–";
+  $("stats").innerHTML = `<span>Cubos faltando</span><b>${v.remaining} / 28</b><span>Pontos</span><b>${v.score}</b>
+    <span>Q*berts (com o atual)</span><b>${v.lives}</b><span>Passos</span><b>${v.steps} / ${v.max_steps}</b>
+    <span>Nível / etapa</span><b>${v.level} / ${v.round}</b><span>Tempo por decisão</span><b>${avg}</b>
+    <span>Congelados</span><b>${v.frozen ? v.frozen + " passos" : "não"}</b><span>Etapas completas</span><b>${v.rounds_cleared}</b>`;
+  const human = $("player").value === "human";
+  $("keysBox").style.display = human ? "" : "none";
+  $("play").disabled = $("step").disabled = v.terminated || human;
+  $("play").textContent = playing ? "⏸ Pausar" : "▶ Jogar";
+  $("probsTitle").textContent = $("player").value === "bot" ? "Notas do robô (convertidas em %)" : "Última decisão";
+  const rec = recorde[v.ruleset] || { score: 0 };
+  $("recordBox").style.display = v.terminated && v.score > rec.score && !v._gravado ? "flex" : "none";
+  if (extra) {
+    if (extra.probabilities) {
+      const entries = Object.entries(extra.probabilities).sort((a, b) => b[1] - a[1]);
+      $("probs").innerHTML = entries.map(([a, p]) =>
+        `<div class="bar ${a === extra.choice ? "chosen" : ""}"><span>${NOMES[a]}</span><div class="track"><div class="fill" style="width:${(p * 100).toFixed(1)}%"></div></div><span class="num">${(p * 100).toFixed(1)}%</span></div>`).join("");
+    } else $("probs").innerHTML = `<p class="fine">Você escolheu ${NOMES[extra.choice]}.</p>`;
+    const evs = extra.events.map(e => e.event === "lost_life" ? `PERDEU UM Q*BERT (${MOTIVOS[e.reason] || e.reason})`
+      : e.event === "enemy_arrived" ? `chegou ${NOME_INIMIGO[e.type] || e.type}` : EVENTOS[e.event] || e.event);
+    const line = document.createElement("div");
+    line.textContent = `#${v.steps} ${NOMES[extra.choice]}${evs.length ? " — " + evs.join(", ") : ""}`;
+    $("log").prepend(line);
+  }
+}
+
+const pausa = ms => new Promise(r => setTimeout(r, ms));
+async function mostrarNivel() { if (turbo()) { splash = 0; if (v) draw(); return; } splash = "level"; draw(); await pausa(1200); splash = 0; if (v) draw(); }
+async function mostrarSelect() { splash = "select"; draw(); await pausa(1500); }
+
+async function newGame() {
+  playing = false; $("err").textContent = ""; times = [];
+  try {
+    const j = await api("/api/new", { seed: +$("seed").value, level: +$("level").value, lives: +$("lives").value,
+      max_steps: +$("steps").value, continue_rounds: $("cont").checked, ruleset: $("ruleset").value });
+    sid = j.sid; v = j.view; $("stateText").textContent = j.state_text;
+    $("log").innerHTML = ""; $("probs").innerHTML = '<p class="fine">Nenhuma ainda.</p>';
+    render(); await mostrarSelect(); await mostrarNivel(); render();
+  } catch (e) { $("err").textContent = e.message; }
+}
+
+async function step(action) {
+  if (busy || !v || v.terminated || splash) return;
+  busy = true;
+  try {
+    const player = $("player").value;
+    const j = await api("/api/step", { sid, player, action });
+    const prev = v;
+    v = j.view; $("stateText").textContent = j.state_text;
+    if (player !== "human") times.push(j.seconds);
+    const fimEtapa = j.events.find(e => e.event === "round_cleared");
+    if (fimEtapa && DELTA[j.choice] && !j.events.some(e => e.event === "rode_disc") && !turbo()) {
+      // último pulo da etapa: mostra o pulo, a pirâmide completa e o bônus contando (+10 de cada vez, como no vídeo)
+      const novo = v, d = DELTA[j.choice];
+      const pontosCubo = j.events.filter(e => e.event === "color_change").reduce((s, e) => s + e.points, 0);
+      v = { ...prev, q: [prev.q[0] + d[0], prev.q[1] + d[1]], colors: prev.colors.map(r => r.map(() => 2)),
+            spoiled: [], remaining: 0, score: prev.score + pontosCubo, enemies: prev.enemies };
+      await animar(prev, [], j.choice);
+      const passo = Math.max(1, Math.round(fimEtapa.points / 5));
+      for (let ganho = 0; ganho < fimEtapa.points; ganho += passo) {
+        await pausa(250); v.score += Math.min(passo, fimEtapa.points - ganho); draw();
+      }
+      await pausa(600);
+      v = novo;
+    } else {
+      await animar(prev, j.events, j.choice);
+    }
+    render(j);
+    if (j.events.some(e => e.event === "new_level")) await mostrarNivel();
+  } catch (e) { $("err").textContent = e.message; playing = false; render(); }
+  busy = false;
+}
+
+async function loop() {
+  while (playing && !v.terminated) { await step(); await new Promise(r => setTimeout(r, +$("delay").value)); }
+  playing = false; render();
+}
+
+const TECLAS = { q: "up_left", e: "up_right", z: "down_left", c: "down_right", " ": "wait",
+  ArrowUp: "up_right", ArrowRight: "down_right", ArrowDown: "down_left", ArrowLeft: "up_left",
+  "7": "up_left", "9": "up_right", "1": "down_left", "3": "down_right", "5": "wait" };
+document.addEventListener("keydown", ev => {
+  if ($("player").value !== "human" || !v || ["INPUT", "SELECT"].includes(document.activeElement.tagName)) return;
+  const a = TECLAS[ev.key] || TECLAS[ev.key.toLowerCase()];
+  if (a) { ev.preventDefault(); step(a); }
+});
+document.querySelectorAll(".keys button").forEach(b => b.onclick = () => step(b.dataset.a));
+$("new").onclick = newGame;
+$("step").onclick = () => { playing = false; step(); };
+$("play").onclick = () => { playing = !playing; render(); if (playing) loop(); };
+$("random").onclick = () => { $("seed").value = Math.floor(Math.random() * 1e6); newGame(); };
+$("player").onchange = () => { playing = false; if (v) render(); };
+$("ruleset").onchange = () => { $("lives").value = $("ruleset").value === "odyssey" ? 7 : 3; carregarRegras(); newGame(); };
+$("recordSave").onclick = async () => {
+  try { const j = await api("/api/recorde", { sid, name: $("recordName").value }); recorde = j.recorde; v._gravado = true; render(); }
+  catch (e) { $("err").textContent = e.message; }
+};
+async function carregarRegras() {
+  const j = await (await fetch("/api/regras")).json();
+  recorde = j.recorde;
+  $("aprox").innerHTML = j.aproximacoes[$("ruleset").value].map(t => `<li>${t}</li>`).join("");
+}
+// ---------- gravação da área da página (controles + jogo + painel). O Chrome pede permissão para
+// compartilhar a aba; depois o vídeo é recortado só no conteúdo (Region Capture) e baixado como .webm.
+let gravador = null;
+async function gravar(segundos = 30 * 60) {   // sem limite prático: para no fim da partida (teto de segurança: 30 min)
+  if (gravador) { gravador.stop(); return; }                    // clicar de novo encerra antes
+  let trilha;
+  try {
+    trilha = await navigator.mediaDevices.getDisplayMedia({
+      video: { frameRate: 30 }, audio: false, preferCurrentTab: true, selfBrowserSurface: "include" });
+  } catch (e) { $("err").textContent = "Gravação cancelada (é preciso escolher 'esta aba' e clicar em Compartilhar)."; return; }
+  const [video] = trilha.getVideoTracks();
+  if (window.CropTarget && video.cropTo) {                     // recorta só a área do conteúdo da página
+    try { await video.cropTo(await CropTarget.fromElement($("gravavel"))); } catch (e) { /* grava a aba inteira */ }
+  }
+  video.onended = () => gravador && gravador.stop();         // se parar pelo aviso do Chrome
+  const tipo = ["video/webm;codecs=vp9", "video/webm;codecs=vp8", "video/webm"].find(t => MediaRecorder.isTypeSupported(t));
+  const partes = [];
+  gravador = new MediaRecorder(trilha, { mimeType: tipo, videoBitsPerSecond: 4000000 });
+  gravador.ondataavailable = e => e.data.size && partes.push(e.data);
+  const inicio = Date.now();
+  // Para sozinho 2 s depois que a partida termina (só se uma partida esteve em andamento durante a gravação)
+  let viuPartida = false, fimDeJogo = null;
+  const relogio = setInterval(() => {
+    if (v && !v.terminated) viuPartida = true;
+    if (viuPartida && v && v.terminated && !fimDeJogo) fimDeJogo = setTimeout(() => gravador && gravador.stop(), 2000);
+    const seg = Math.floor((Date.now() - inicio) / 1000);   // tempo já gravado
+    $("gravar").textContent = fimDeJogo ? "⏹ Fim de jogo: parando…"
+      : `⏹ Parar gravação (${Math.floor(seg / 60)}:${String(seg % 60).padStart(2, "0")})`;
+    if (v && !anim) draw();                                     // garante quadros mesmo com a tela parada
+  }, 250);
+  const fim = setTimeout(() => gravador && gravador.stop(), segundos * 1000);
+  gravador.onstop = () => {
+    clearInterval(relogio); clearTimeout(fim); clearTimeout(fimDeJogo); gravador = null;
+    trilha.getTracks().forEach(t => t.stop());                  // encerra o compartilhamento da aba
+    const blob = new Blob(partes, { type: "video/webm" });
+    // Envia ao servidor, que converte para MP4 (o .webm do Chrome toca "bugado" no player do Windows)
+    $("gravar").textContent = "⏳ Convertendo para MP4…"; $("gravar").disabled = true;
+    fetch("/api/video", { method: "POST", headers: { "Content-Type": "video/webm" }, body: blob })
+      .then(r => r.json().then(j => { if (!r.ok) throw new Error(j.error); return j; }))
+      .then(j => { $("err").style.color = "var(--good)"; $("err").textContent = `Vídeo salvo: ${j.mp4} (${j.mb} MB)`; })
+      .catch(e => {                                             // se falhar, baixa o .webm como antes
+        $("err").style.color = ""; $("err").textContent = `Não converteu (${e.message}); baixando o .webm.`;
+        const agora = new Date(), p = n => String(n).padStart(2, "0");
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = `qbert_${agora.getFullYear()}${p(agora.getMonth() + 1)}${p(agora.getDate())}_${p(agora.getHours())}${p(agora.getMinutes())}.webm`;
+        a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 60000);
+      })
+      .finally(() => { $("gravar").textContent = "⏺ Gravar até o fim"; $("gravar").disabled = false; });
+  };
+  gravador.start(1000);
+}
+$("gravar").onclick = () => gravar();
+
+// ?auto=bot|model inicia jogando sozinho; ?seed=N&level=N&cont=1 ajustam a partida
+const qs = new URLSearchParams(location.search);
+["seed", "level"].forEach(k => { if (qs.get(k)) $(k).value = qs.get(k); });
+if (qs.get("cont")) $("cont").checked = true;
+if (qs.get("turbo")) $("turbo").checked = true;
+if (qs.get("steps")) $("steps").value = qs.get("steps");
+const fonte = document.fonts ? document.fonts.load('20px "Press Start 2P"').catch(() => {}) : Promise.resolve();
+Promise.all([carregarRegras(), fonte]).then(newGame).then(async () => {
+  if (qs.get("jogadas")) {  // teste: ?jogadas=up_left,down_right joga essas jogadas como "você"
+    $("player").value = "human"; render();
+    for (const a of qs.get("jogadas").split(",")) { await step(a); await pausa(200); }
+    return;
+  }
+  const auto = qs.get("auto");
+  if (auto) { $("player").value = auto; $("delay").value = "0"; playing = true; render(); loop(); }
+});
+</script>
+</body>
+</html>

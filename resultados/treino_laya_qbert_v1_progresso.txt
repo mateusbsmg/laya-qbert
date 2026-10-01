@@ -1,0 +1,5 @@
+Treino do Laya no Q*bert
+Passo 3000 de 3000 (100%)
+Tempo decorrido: 210 min | falta ~0 min (término ~01:13)
+Placa: 67 C | pausas para esfriar: 23 min | memória pico 8.94 GB
+Última avaliação (passo 3000): concorda com o professor em 77% | erro 0.749
